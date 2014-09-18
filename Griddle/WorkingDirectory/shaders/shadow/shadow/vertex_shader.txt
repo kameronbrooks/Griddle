@@ -1,0 +1,65 @@
+#version 140
+//Standard Shader
+
+
+invariant gl_Position;
+uniform mat4 modelViewProjectionMatrixLight;
+
+uniform mat4 modelMatrix = mat4(1.0);
+uniform mat4 viewMatrix = mat4(1.0);
+uniform mat4 projectionMatrix = mat4(1.0);
+uniform mat4 modelViewMatrix = mat4(1.0);
+uniform mat4 modelViewProjectionMatrix = mat4(1.0);
+uniform mat3 normalMatrix = mat3(1.0);
+
+varying vec4 lightVertexPos;
+
+uniform mat4 light_projection = mat4(1.0);
+uniform mat4 light_view = mat4(1.0);
+uniform mat4 bias = mat4(1.0);
+
+uniform vec3 sunVector;
+
+in float heat;
+out vec3 normal;
+smooth out vec4 color;
+out float temperature;
+out vec4 textureCoord;
+out vec3 vToLight0Vec;
+out float lightContrib;
+
+out float depth_eye;
+
+void main() {
+
+	
+
+	vec4 p;
+	vec4 ecPos;
+	vec3 ecPos3;
+	vec3 sunVec4 = normalMatrix * sunVector;
+	
+	vec4 amb = vec4(0,0,0,0);
+	vec4 dif = vec4(0,0,0,0);
+	vec4 spec = vec4(0,0,0,0);
+
+	p.xyz = gl_Vertex.xyz;
+	p.w = 1.0;
+	
+	ecPos= modelViewMatrix  * p;
+	ecPos3 = (vec3(ecPos) / ecPos.w);
+	
+	normal = normalize(normalMatrix * gl_Normal);
+	
+	gl_Position = modelViewProjectionMatrix  * p;
+	lightVertexPos = (bias * light_projection * light_view * modelMatrix) * p;
+	
+	color = gl_Color;
+	
+	lightContrib = max(0.0,dot(normal,normalize(sunVec4.xyz)));
+	textureCoord = gl_MultiTexCoord0;
+
+
+	depth_eye = abs(ecPos3.z);
+	
+}

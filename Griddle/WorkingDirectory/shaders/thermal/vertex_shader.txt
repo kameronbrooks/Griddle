@@ -1,0 +1,67 @@
+#version 140
+
+
+invariant gl_Position;
+in float heat;
+out vec3 normal;
+out vec4 color;
+out float temperature;
+out vec4 textureCoord;
+out vec3 vToLight0Vec;
+out vec4 lightContrib;
+out float depth;
+uniform float max_temp;
+uniform float min_temp;
+
+
+
+void directionalLightSource(const in int i, const in vec3 normal, inout vec4 ambient, inout vec4 diffuse, inout vec4 specular) {
+	
+	float nDotVP;
+	float nDotHV;
+	float pf;
+
+	nDotVP = max(0.0, dot(normal,normalize(vec3(gl_LightSource[i].position))));
+	nDotHV = max(0.0, dot(normal,normalize(vec3(gl_LightSource[i].halfVector))));
+	
+	if(nDotVP == 0.0) {
+		pf = 0.0;
+	} else {
+		pf = pow(nDotHV, 16);
+	}
+	ambient += gl_LightSource[i].ambient;
+	diffuse += gl_LightSource[i].diffuse * nDotVP;
+	specular += gl_LightSource[i].specular * pf;
+}
+
+void main() {
+
+	
+
+	vec4 p;
+	vec4 ecPos;
+	vec3 ecPos3;
+	
+	vec4 amb = vec4(0,0,0,0);
+	vec4 dif = vec4(0,0,0,0);
+	vec4 spec = vec4(0,0,0,0);
+
+	p.xyz = gl_Vertex.xyz;
+	p.w = 1.0;
+
+	ecPos= gl_ModelViewMatrix  * p;
+	ecPos3 = (vec3(ecPos) / ecPos.w);
+	
+	normal = gl_NormalMatrix * gl_Normal;
+	normal = normalize(normal);
+
+	directionalLightSource(0,normal,amb,dif,spec);
+
+	gl_Position = gl_ModelViewProjectionMatrix  * p;
+
+	lightContrib = vec4(2,2,2,1);
+	textureCoord = vec4(0,0,0,0);
+	temperature = (heat  - min_temp)/(max_temp - min_temp);
+	depth = abs(ecPos3.z);
+	
+}

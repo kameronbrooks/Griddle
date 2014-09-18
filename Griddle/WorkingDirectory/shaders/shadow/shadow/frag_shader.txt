@@ -1,0 +1,48 @@
+#version 140
+//Standard Shader
+
+uniform sampler2D shadowMap;
+varying vec4 lightVertexPos;
+
+in vec3 normal;
+smooth in vec4 color;
+
+in vec4 textureCoord;
+uniform sampler2D texture;
+in float lightContrib;
+
+in float depth_eye;
+
+uniform float fog_start = 10;
+uniform float fog_end = 2000;
+uniform vec4 fog_color = vec4(0.8,0.9,1,1);
+
+float getFog() {
+	//return  clamp((gl_FragCoord.z / gl_FragCoord.w  - fog_start) / (fog_end - fog_start),0.0, 1.0);
+	float z = gl_FragCoord.z / gl_FragCoord.w;
+	return clamp( z /fog_end,0.0, 1.0);
+}
+
+vec4 applyFog(in vec4 c) {
+	return mix(c, gl_Fog.color, getFog());
+}
+
+void main() {
+	
+	//float shadowVal = shadow2DProj(shadowMap,lightVertexPos).r; //r== 1.0 not in shadow or 0.0 if is in shadow
+	
+	float shadowVal = 0.5;
+	float offset = 0.0;
+	vec4 pdlvp = lightVertexPos/ lightVertexPos.w;
+	if(texture2D(shadowMap,pdlvp.xy).z > pdlvp.z+offset) {
+		shadowVal = 1.0;
+	}
+	
+	//vec4 col = color * texture2D(texture, textureCoord.st) * vec4(shadowVal,shadowVal,shadowVal,1.0) * vec4(lightContrib,lightContrib,lightContrib,1.0);
+	vec4 col = color * vec4(shadowVal,shadowVal,shadowVal,1.0) *vec4(lightContrib,lightContrib,lightContrib,1.0);
+	//vec4 col = color * vec4(shadowVal,shadowVal,shadowVal,1.0);
+	//gl_FragColor = applyFog(col);
+	gl_FragColor = col;
+	
+}
+

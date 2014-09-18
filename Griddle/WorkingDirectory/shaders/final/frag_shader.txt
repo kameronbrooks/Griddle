@@ -1,0 +1,67 @@
+#version 140
+//Standard Shader
+
+uniform sampler2D shadowMap;
+varying vec4 lightVertexPos;
+in vec3 sunVecNormalized;
+
+in vec3 normal;
+smooth in vec4 color;
+
+in vec4 textureCoord;
+uniform sampler2D texture;
+in float lightContrib;
+
+in float depth_eye;
+
+uniform float fog_start = 10;
+uniform float fog_end = 2000;
+uniform vec4 fog_color = vec4(0.8,0.9,1,1);
+
+float getFog() {
+	//return  clamp((gl_FragCoord.z / gl_FragCoord.w  - fog_start) / (fog_end - fog_start),0.0, 1.0);
+	float z = gl_FragCoord.z / gl_FragCoord.w;
+	return clamp( z /fog_end,0.0, 1.0);
+}
+
+vec4 applyFog(in vec4 c) {
+	return mix(c, gl_Fog.color, getFog());
+}
+
+float pcf() {
+	float shadowVal = 0.0;
+	float offset = 0.0;
+	vec4 pdlvp = lightVertexPos/ lightVertexPos.w;
+	for(float x = -0.0001; x < 0.0001 ; x+=0.00005) {
+		for(float y = -0.0001; y < 0.0001 ; y+=0.00005) {
+			vec2 o = vec2(x,y);
+			if(texture2D(shadowMap,pdlvp.xy+o).z >= pdlvp.z) {
+				shadowVal += 1;
+			}
+		}
+	}
+	shadowVal /= 5.0;
+	return shadowVal;
+}
+float getShadow() {
+	vec4 pdlvp = lightVertexPos/ lightVertexPos.w;
+	if(texture2D(shadowMap,pdlvp.xy).z >= pdlvp.z) {
+		return 1.0;
+	} else {
+		return 0.2;
+	}
+}
+
+void main() {
+	
+	
+	float lightAmb = 0.3 * sunVecNormalized.y;
+	float shadowVal = (lightContrib >= 0) ? lightContrib * getShadow() + lightAmb: lightContrib + lightAmb;
+	vec4 lightValue = vec4(shadowVal,shadowVal,shadowVal,1.0);
+	
+	vec4 col = color * texture2D(texture, textureCoord.st) * lightValue;
+	//gl_FragColor = applyFog(col);
+	gl_FragColor = col;
+	
+}
+

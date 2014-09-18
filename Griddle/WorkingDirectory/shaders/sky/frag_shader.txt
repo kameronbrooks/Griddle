@@ -1,0 +1,61 @@
+#version 140
+//Sky Shader
+
+smooth in vec4 color;
+
+in vec4 textureCoord;
+
+uniform sampler2D tex;
+
+uniform vec3 sunVector = vec3(0,1,0);
+uniform vec3 moonVector = vec3(1,0,0);
+
+uniform vec4 nightColorH = vec4(0.05,0.05,0.3,0.9);
+uniform vec4 nightColorZ = vec4(0.0,0.0,0.1,0.1);
+
+uniform vec4 sunsetColorH = vec4(0.9,0.4,0.1,1);
+uniform vec4 sunsetColorZ = vec4(0.4,0.4,0.7,0.98);
+
+uniform vec4 dayColorH = vec4(0.7,0.8,0.9,1);
+uniform vec4 dayColorZ = vec4(0.3,0.3,0.8,1);
+
+uniform float lightPollution = 1;
+
+vec4[3] skyColorH = vec4[3](nightColorH, sunsetColorH, dayColorH);
+vec4[3] skyColorZ = vec4[3](nightColorZ, sunsetColorZ, dayColorZ);
+
+in float altitude;
+in vec3 vertexDirectionVector;
+
+vec4 getColorTexel(in vec4 in_color) {
+	vec4 raw = in_color * texture2D(tex, textureCoord.st);
+	return clamp(raw,0.0,1.0);
+}
+
+
+vec4 getSkyColor() {
+	float sunDot = dot(vertexDirectionVector, sunVector);
+	float sunAlt = sunVector.y;
+	float sunContrib = ((-sunDot) + 1.0) / 2;
+
+	int ix = (sunAlt > 0) ? 2 : 0;
+	float r = abs(sunAlt);
+	vec4 dirH = mix(skyColorH[1], skyColorH[0], sunContrib*0.75);
+	vec4 h = mix(dirH, skyColorH[ix], pow(r,0.4));
+	vec4 z = mix(skyColorZ[1], skyColorZ[ix], r);
+	return mix(h,z,altitude);
+	
+	
+}
+
+void main() {
+	vec4 zenith_color = vec4(0.3,0.3,1,1);
+	vec4 horizon_color = vec4(0.7,0.8,0.9,1);
+	
+	
+	vec4 calc = getSkyColor();
+	calc.a = clamp(calc.a * lightPollution,0.0, 1.0);
+	
+	gl_FragColor = getColorTexel(calc);
+		
+}

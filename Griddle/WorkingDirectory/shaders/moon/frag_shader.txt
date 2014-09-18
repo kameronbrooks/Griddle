@@ -1,0 +1,27 @@
+#version 140
+//Sky Shader
+
+smooth in vec4 color;
+
+in vec4 textureCoord;
+
+uniform sampler2D tex;
+
+uniform vec3 sunVector = vec3(0,1,0);
+uniform vec3 moonVector = vec3(1,0,0);
+
+in float altitude;
+in vec3 vertexDirectionVector;
+
+vec4 getColorTexel(in vec4 in_color) {
+	vec4 tex = texture2D(tex, textureCoord.st);
+	vec4 raw = in_color * tex;
+	raw.w = (raw.x + raw.y + raw.z) / 4;
+	return clamp(raw,0.0,1.0);
+}
+
+void main() {
+	
+	gl_FragColor = getColorTexel(color);
+		
+}

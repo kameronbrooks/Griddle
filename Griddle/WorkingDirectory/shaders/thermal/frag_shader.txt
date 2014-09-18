@@ -1,0 +1,35 @@
+#version 140
+
+in vec3 normal;
+in vec4 color;
+in float temperature;
+in vec4 textureCoord;
+uniform sampler2D tex;
+in vec4 lightContrib;
+in float depth;
+
+uniform float fog_start = 300;
+uniform float fog_end = 750;
+
+uniform vec4 colors[5] = vec4[5](
+vec4( 0.0, 0.0, 0.01, 1.0),
+vec4( 0.0, 0.0, 1.0, 1.0),  
+vec4( 1.0, 1.0, 0.0, 1.0),  
+vec4( 1.0, 0.0, 0.0, 1.0), 
+vec4( 1.0, 1.0, 0.9, 1.0)
+);
+
+float getFog() {
+	return  clamp((depth-fog_start) / (fog_end - fog_start),0.0, 1.0);
+}
+
+void main() {
+	
+	int ix = (temperature < 0.75) ? ((temperature < 0.50) ? ((temperature < 0.25)? 0:1) : 2) : 3;
+	vec4 oCol = mix(colors[ix],colors[ix+1],(temperature-float(ix)*0.25)/0.25);
+	
+	float intensity = clamp(getFog()-2*(clamp(temperature-0.75,0.0, 1.0)), 0.0f, 1.0f);	
+	
+	gl_FragColor = mix(oCol, vec4(0,0,0,1),  intensity);
+	gl_FragColor.w = 1.0;
+}

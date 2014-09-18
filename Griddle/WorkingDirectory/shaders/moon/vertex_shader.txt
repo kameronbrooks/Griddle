@@ -1,0 +1,36 @@
+#version 140
+//Sky Shader
+
+
+invariant gl_Position;
+
+smooth out vec4 color;
+
+out vec4 textureCoord;
+out float altitude;
+out vec3 vertexDirectionVector;
+
+void main() {
+
+	
+
+	vec4 p;
+	vec4 ecPos;
+	vec3 ecPos3;
+	
+	p.xyz = gl_Vertex.xyz;
+	p.w = 1.0;
+
+	ecPos= gl_ModelViewMatrix  * p;
+	ecPos3 = (vec3(ecPos) / ecPos.w);
+
+	
+	altitude = abs(gl_Vertex.y);
+	vertexDirectionVector = gl_Vertex.xyz - vec3(0, 0, 0);
+
+	textureCoord = gl_MultiTexCoord0;
+	gl_Position = gl_ModelViewProjectionMatrix  * p;
+
+	color = gl_Color;
+	
+}

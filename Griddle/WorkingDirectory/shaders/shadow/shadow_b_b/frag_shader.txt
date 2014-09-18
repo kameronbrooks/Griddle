@@ -1,0 +1,12 @@
+#version 140
+//Standard Shader
+
+uniform sampler2DShadow shadowMap;
+varying vec4 lightVertexPos;
+
+void main() {
+	
+	float shadowVal = shadow2DProj(shadowMap,lightVertexPos).r; //r== 1.0 not in shadow or 0.0 if is in shadow
+	
+	gl_FragColor = vec4(shadowVal,shadowVal,shadowVal,1.0-shadowVal);	
+}
