@@ -113,11 +113,39 @@ namespace Griddle {
 			_colors[start + i] = glm::vec4(r, g, b, a);
 		}
 	}
-	void GridModel::updateBlock(int x, int y, int z, int blockType) {
+	void GridModel::updateBlock(int x, int y, int z, int blockType, int data) {
 		Blocks::Block block = Blocks::getInstance()->getBlock(blockType);
-		setBlockTexture(x, y, z, block._xOffset, block._yOffset);
-		setBlockColor(x, y, z, block._r, block._g, block._b, block._a);
+		setBlockTexture(x, y, z, block._stateList[data]._xOffset, block._stateList[data]._yOffset);
+		setBlockColor(x, y, z, block._stateList[data]._r, block._stateList[data]._g, block._stateList[data]._b, block._stateList[data]._a);
 
+	}
+	void GridModel::setSelectedBlock(int x, int y, int z) {
+		if (x != _selectedBlock[0] || y != _selectedBlock[1] || z != _selectedBlock[2]) {
+			if (_selectedBlock[0] < 0 || _selectedBlock[1] < 0 || _selectedBlock[2] < 0) {
+				
+			}
+			else {
+				setBlockColor(_selectedBlock[0], _selectedBlock[1], _selectedBlock[2], 1, 1, 1, 1);
+			}
+			
+
+			if (x < 0 || x >= this->_width || y < 0 || y >= this->_height || z < 0 || z >= this->_depth) {
+				
+				_selectedBlock[0] = -1;
+				_selectedBlock[1] = -1;
+				_selectedBlock[2] = -1;
+			}
+			else {
+				_selectedBlock[0] = x;
+				_selectedBlock[1] = y;
+				_selectedBlock[2] = z;
+				setBlockColor(_selectedBlock[0], _selectedBlock[1], _selectedBlock[2], 0, 1, 0, 1);
+			}
+
+			
+			
+		}
+		//std::cout << "selected block: " << _selectedBlock[0] << ", " << _selectedBlock[1] << ", " << _selectedBlock[2] << std::endl;
 	}
 	void GridModel::draw(glgl::RenderState* state) {
 		

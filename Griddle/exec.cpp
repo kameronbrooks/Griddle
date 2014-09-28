@@ -16,7 +16,7 @@ namespace Griddle {
 		glgl::StaticModel* _blockModel;
 		glgl::DynamicModel* _chunkModel;
 		GridModel* _gridModel;
-
+		float _maxOrthographicZoom;
 		float rotation;
 		bool _frustum;
 		float _orthographicZoom;
@@ -32,11 +32,12 @@ namespace Griddle {
 			glEnable(GL_COLOR_MATERIAL);
 			glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 			glEnable(GL_CULL_FACE);
-			//glViewport(0, 0, _parentApp->getWidth(), _parentApp->getHeight());
+			glViewport(0, 0, _parentApp->getWidth(), _parentApp->getHeight());
 			
 			
 		}
 		void initTextures() {
+
 		}
 
 		void initModels() {
@@ -75,25 +76,52 @@ namespace Griddle {
 			BlockTextures::getInstance()->loadTexture(Blocks::getInstance()->registerBlockType(id++, "rock grassy block", 2, 0), "textures/rock grassy block.png");
 			BlockTextures::getInstance()->loadTexture(Blocks::getInstance()->registerBlockType(id++, "dirt", 0, 1), "textures/dirt.png");
 			BlockTextures::getInstance()->loadTexture(Blocks::getInstance()->registerBlockType(id++, "grass", 1, 1), "textures/grass.png");
+
+			
 			BlockTextures::getInstance()->loadTexture(Blocks::getInstance()->registerBlockType(id++, "grass patchy", 2, 1), "textures/grass patchy.png");
 			BlockTextures::getInstance()->loadTexture(Blocks::getInstance()->registerBlockType(id++, "grass patchy 1", 3, 1), "textures/grass patchy1.png");
-			BlockTextures::getInstance()->loadTexture(Blocks::getInstance()->registerBlockType(id++, "stone brick", 4, 1), "textures/stone brick block.png");
-			BlockTextures::getInstance()->loadTexture(Blocks::getInstance()->registerBlockType(id++, "stone brick d0", 5, 1), "textures/stone brick block_d0.png");
-			BlockTextures::getInstance()->loadTexture(Blocks::getInstance()->registerBlockType(id++, "stone brick d1", 6, 1), "textures/stone brick block_d1.png");
+
+			Blocks::Block stoneBrick;
+			stoneBrick._id = id++;
+			stoneBrick._name = "stone brick";
+			stoneBrick.addState(0, 4, 1).addState(1, 5, 1).addState(2, 6, 1);
+			Blocks::getInstance()->registerBlockType(stoneBrick);
+			BlockTextures::getInstance()->loadTexture(stoneBrick, 0, "textures/stone brick block.png");
+			BlockTextures::getInstance()->loadTexture(stoneBrick, 1, "textures/stone brick block_d0.png");
+			BlockTextures::getInstance()->loadTexture(stoneBrick, 2, "textures/stone brick block_d1.png");
+
+
 			_textureAtlas.getHandle() = BlockTextures::getInstance()->build();
 		}
 
 		void initGrid() {
-			
-			
-			
-			int passes = 4;
+			std::cout << Blocks::getInstance()->getBlock(8)._stateList[1]._xOffset << std::endl;
+			int passes = 70;
 			for (int i = 0; i < _gridModel->_width; i++) {
 				for (int j = 0; j < _gridModel->_height; j++) {
 					_gridModel->updateBlock(i, j, 0, 1);
 					_gridModel->updateBlock(i, j, 1, 0);
+					
 				}
 			}
+			for (int h = 0; h < passes; h++) {
+				int islandSize = rand() % 10;
+				int randX = rand() % (_gridModel->_width);
+				int randY = rand() % (_gridModel->_height);
+				for (int i = randX-islandSize / 2; i < randX + islandSize / 2; i++) {
+					for (int j = randY -islandSize / 2; j < randY+islandSize / 2; j++) {
+						if (i < 0 || i >= _gridModel->_width || j < 0 || j >= _gridModel->_height)continue;
+						int blockType = rand() % 8;
+						if (blockType < 3)blockType = 3;
+						
+						_gridModel->updateBlock(i, j, 0, blockType);
+						
+
+					}
+				}
+			}
+
+
 			
 			
 		}
@@ -109,10 +137,8 @@ namespace Griddle {
 			
 			_blockModel = new glgl::StaticModel();
 			_chunkModel = new glgl::DynamicModel(glgl::StaticModel::VERTICES | glgl::StaticModel::COLORS);
-
-			if (_chunkModel->hasColor()) std::cout << "has colors" << std::endl;
-			else std::cout << "does not have colors" << std::endl;
-
+				
+			_maxOrthographicZoom = 200;
 			rotation = 0;
 			_frustum = false;
 			_orthographicZoom = 60;
@@ -151,7 +177,7 @@ namespace Griddle {
 		void InitialState::onDraw() {
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 			glEnable(GL_DEPTH_TEST);
-			
+			//glViewport(0, 0, _parentApp->getWidth(), _parentApp->getHeight());
 			_pipeline.matrices().matrixMode(glgl::Matrices::PROJECTION_MATRIX);
 			_pipeline.matrices().loadIdentity();
 			if (_frustum) {
@@ -163,7 +189,6 @@ namespace Griddle {
 			}
 			
 			
-
 			_pipeline.matrices().matrixMode(glgl::Matrices::MODEL_MATRIX);
 			_pipeline.matrices().loadIdentity();
 			_camera->look(&(_pipeline.matrices()));
@@ -173,12 +198,24 @@ namespace Griddle {
 			
 			
 			_standardShader.use();
-			
+			_standardShader.uniform1f("use_texture", 1);
 			_pipeline.matrices().sendToShader(_standardShader);
 			_textureAtlas.bind();
 			glColor4f(1, 1, 1, 1);
 			
 			_gridModel->draw(&_pipeline);
+			
+			_standardShader.uniform1f("use_texture", 0);
+			glPointSize(5);
+			glBegin(GL_POINTS);
+			glColor4f(1, 1, 1, 1);
+			glTexCoord2f(0,0); glVertex3f(0, 0, 0);
+			glTexCoord2f(0.5, 1); glVertex3f(4, 0, 0);
+			glTexCoord2f(1, 0); glVertex3f(2, 4, 0);
+
+			
+			glVertex3f(_camera->getPos().x, _camera->getPos().y, _camera->getPos().z);
+			glEnd();
 			
 			
 			//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -222,20 +259,47 @@ namespace Griddle {
 		void InitialState::onUpdate(double delta) {
 			updateKeys(delta);
 		}
-		void findMouseCoords(float mx, float my) {
-			/*
-			float x = (2.0f * mx) / (float)this->getParent()->getWidth() - 1.0f;
-			float y = (1.0f - (2.0f * my)) / (float)this->getParent()->getHeight();
-			float z = 1.0f;
-			glm::vec3 rayNds = glm::vec3(x, y, z);
-			glm::vec4 rayClip = glm::vec4(x, y, -1, 1);
-			glm::vec4 rayEye = glm::inverse(_pipeline.matrices().getProjectionMatrix()) * rayClip;
-			glm::vec4 rayWorld4 = glm::inverse(_pipeline.matrices().getViewMatrix() * rayEye);
-			glm::vec3 rayWorld = glm::normalize(glm::vec3(rayWorld4.x, rayWorld4.y, rayWorld4.z));
 
-			std::cout << rayWorld.x << ", " << rayWorld.y << ", " << rayWorld.z << std::endl;
-			*/
+		glm::vec3 findMouseCoords(float mx, float my) {
+			
+			if (_frustum) {
+				glm::vec3 cameraPos = _camera->getPos();
+				float x = mx;
+				float y = (float)this->getParent()->getHeight() - my;
+				float z = 1;
+				float depth = 0.85f;
+				
+				glm::vec3 rayWorld = glm::unProject(glm::vec3(x, y, z), _pipeline.matrices().getModelViewMatrix(), _pipeline.matrices().getProjectionMatrix(), glm::vec4(0, 0, _parentApp->getWidth(), _parentApp->getHeight()));
+				
+				rayWorld = glm::normalize(rayWorld - cameraPos);
+
+				float t = (depth - cameraPos.y) / (rayWorld.y);
+				rayWorld = _camera->getPos() + rayWorld * t;
+				
+				return rayWorld;
+			}
+			else {
+				glm::vec3 cameraPos = _camera->getPos();
+				float x = mx;
+				float y = (float)this->getParent()->getHeight() - my;
+				float z = 0;
+				float depth = 0.5f;
+				
+
+
+				glm::vec3 rayWorld = glm::unProject(glm::vec3(x, y, z), _pipeline.matrices().getModelViewMatrix(), _pipeline.matrices().getProjectionMatrix(), glm::vec4(0, 0, _parentApp->getWidth(), _parentApp->getHeight()));
+				glm::vec3 dir = glm::vec3(-1, -1, -1);
+				dir = glm::normalize(dir);
+
+				float t = (depth - rayWorld.y) / (dir.y);
+				rayWorld = rayWorld + dir * t;
+				
+				return rayWorld;
+			}
+			
 		}
+
+		
 		void updateKeys(double delta) {
 			const Uint8* keys = SDL_GetKeyboardState(NULL);
 
@@ -292,7 +356,7 @@ namespace Griddle {
 					_camera->setTarg(t + d);
 				}
 				else {
-					_orthographicZoom += 1;
+					if (_orthographicZoom<_maxOrthographicZoom)_orthographicZoom += 0.5;
 				}
 				
 			}
@@ -307,7 +371,7 @@ namespace Griddle {
 					_camera->setTarg(t + d);
 				}
 				else {
-					if (_orthographicZoom>1)_orthographicZoom -= 1;
+					if (_orthographicZoom>30)_orthographicZoom -= 0.5;
 					
 				}
 
@@ -351,8 +415,13 @@ namespace Griddle {
 
 			}
 			else if (Event->type == SDL_MOUSEMOTION) {
-				//findMouseCoords(Event->motion.x, Event->motion.y);
-
+				glm::vec3 mousePos3D = findMouseCoords(Event->motion.x, Event->motion.y);
+				int blockPos[3];
+				blockPos[0] = int((mousePos3D.x - _gridModel->_x));
+				blockPos[1] = int((mousePos3D.z - _gridModel->_z));
+				blockPos[2] = int((mousePos3D.y - _gridModel->_y));
+				//std::cout << "selecting block: " << blockPos[0] << ", " << blockPos[1] << ", " << blockPos[2] << std::endl;
+				_gridModel->setSelectedBlock(blockPos[0], blockPos[1], blockPos[2]);
 			}
 		}
 

@@ -6,17 +6,31 @@ namespace Griddle {
 		_registeredBlockList[block._id] = block;
 		return block;
 	}
+
+	Blocks::Block& Blocks::Block::addState(int data, float xOffset, float yOffset, float r, float g, float b, float a, float hardness) {
+		State state;
+		state._xOffset = xOffset;
+		state._yOffset = yOffset;
+		state._r = r;
+		state._g = g;
+		state._b = b;
+		state._a = a;
+		state._hardness = hardness;
+		_stateList[data] = state;
+		return (*this);
+	}
 	Blocks::Block Blocks::registerBlockType(int id, std::string name, float xOffset, float yOffset, float r, float g, float b, float a, float hardness) {
 		Block block;
 		block._id = id;
-		block.name = name;
-		block._xOffset = xOffset;
-		block._yOffset = yOffset;
-		block._hardness = hardness;
-		block._r = r;
-		block._g = g;
-		block._b = b;
-		block._a = a;
+		block._name = name;
+		block._stateList[0] = Block::State();
+		block._stateList[0]._xOffset = xOffset;
+		block._stateList[0]._yOffset = yOffset;
+		block._stateList[0]._hardness = hardness;
+		block._stateList[0]._r = r;
+		block._stateList[0]._g = g;
+		block._stateList[0]._b = b;
+		block._stateList[0]._a = a;
 		_registeredBlockList[id] = block;
 		return block;
 	}
@@ -67,7 +81,10 @@ namespace Griddle {
 		return _baseSpriteSize / _atlasSize;
 	}
 	bool BlockTextures::loadTexture(Blocks::Block block, std::string filename) {
-		return _textureAtlasBuilder.loadImage(filename, block._xOffset*_baseSpriteSize, block._yOffset*_baseSpriteSize);
+		return _textureAtlasBuilder.loadImage(filename, block._stateList[0]._xOffset*_baseSpriteSize, block._stateList[0]._yOffset*_baseSpriteSize);
+	}
+	bool BlockTextures::loadTexture(Blocks::Block block, int data, std::string filename) {
+		return _textureAtlasBuilder.loadImage(filename, block._stateList[data]._xOffset*_baseSpriteSize, block._stateList[data]._yOffset*_baseSpriteSize);
 	}
 	GLuint BlockTextures::build() {
 		return _textureAtlasBuilder.createTextureAtlas();

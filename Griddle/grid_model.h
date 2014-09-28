@@ -13,15 +13,18 @@ namespace Griddle {
 		bool _yMajorOrder;
 		void addBlockToModel(int x, int y, int z, float tx, float ty);
 		void initBaseBlockModel();
+		int _selectedBlock[3];
 	public:
 		float _textureScale;
-		float _width, _height, _depth, _x, _y, _z;
+		int _width, _height, _depth;
+		float _x, _y, _z;
 		GridModel::GridModel();
 		GridModel::GridModel(int width, int height, int depth, float x, float y, float ts, int state = glgl::StaticModel::COLORS);
 		void build();
 		void setBlockTexture(int x, int y, int z, float xOffset, float yOffset);
 		void setBlockColor(int x, int y, int z, float r, float g, float b, float a);
-		void updateBlock(int x, int y, int z, int blockType);
+		void updateBlock(int x, int y, int z, int blockType, int data = 0);
+		void setSelectedBlock(int x, int y, int z);
 		void draw(glgl::RenderState* state);
 	};
 }
