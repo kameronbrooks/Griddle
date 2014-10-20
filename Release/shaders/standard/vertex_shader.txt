@@ -1,0 +1,29 @@
+#version 140
+//Standard Shader
+
+
+invariant gl_Position;
+uniform mat4 modelMatrix = mat4(1.0);
+uniform mat4 viewMatrix = mat4(1.0);
+uniform mat4 projectionMatrix = mat4(1.0);
+uniform mat4 modelViewMatrix = mat4(1.0);
+uniform mat4 modelViewProjectionMatrix = mat4(1.0);
+uniform mat3 normalMatrix = mat3(1.0);
+out vec4 textureCoord;
+out vec4 color;
+
+
+void main() {
+
+	
+
+	vec4 p;
+	p.xyz = gl_Vertex.xyz;
+	p.w = 1.0;
+	gl_Position = modelViewProjectionMatrix  * p;
+	
+	textureCoord = gl_MultiTexCoord0;
+	color = gl_Color;
+
+	
+}
