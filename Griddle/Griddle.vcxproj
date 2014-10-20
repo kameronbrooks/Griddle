@@ -88,13 +88,17 @@
     <ClCompile Include="App.cpp" />
     <ClCompile Include="blocks.cpp" />
     <ClCompile Include="exec.cpp" />
+    <ClCompile Include="FileDefLoader.cpp" />
+    <ClCompile Include="griddle_ui.cpp" />
     <ClCompile Include="grid_model.cpp" />
     <ClCompile Include="Utility.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="App.h" />
     <ClInclude Include="blocks.h" />
+    <ClInclude Include="FileDefLoader.h" />
     <ClInclude Include="grid.h" />
+    <ClInclude Include="griddle_ui.h" />
     <ClInclude Include="grid_model.h" />
     <ClInclude Include="includes.h" />
     <ClInclude Include="Utility.h" />

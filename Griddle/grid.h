@@ -24,14 +24,19 @@ namespace grid {
 
 			void setData(T*data, int count) {
 				_count = count;
+				if (_data != NULL) {
+					delete[] _data;
+				}
 				_data = new T[count];
 				_type = sizeof(T);
 				memcpy(_data, data, count);
 			}
+			
 			DataEntity(unsigned int id, unsigned int count, T* data) {
 				_id = id;
 				_count = count;
 				_data = new T[count];
+				_type = sizeof(T);
 				memcpy(_data, data, count*sizeof(T));
 			}
 			DataEntity() {
@@ -71,6 +76,17 @@ namespace grid {
 			_height = 1;
 			_depth = 1;
 			_blockAtomCount = 2;
+			_x = _y = _z = 0;
+			_writeWorldCoordsToFile = false;
+			_writeBinary = false;
+			_order = Y_MAJOR_ORDER;
+		}
+		Grid(int width, int height, int depth, int blockAtomCount = 2) {
+			_data = 0;
+			_width = width;
+			_height = height;
+			_depth = depth;
+			_blockAtomCount = blockAtomCount;
 			_x = _y = _z = 0;
 			_writeWorldCoordsToFile = false;
 			_writeBinary = false;
@@ -169,6 +185,7 @@ namespace grid {
 
 		}
 		void setBlockData(int x, int y, int z, int index, T data) {
+			/*
 			if (index == 0) {
 				T old = (T)((int)_data[((y*_width) + (x*_depth) + z)*_blockAtomCount + 1 + index] & 3);
 				data = data << 2;
@@ -176,8 +193,21 @@ namespace grid {
 			}
 			else {
 				_data[((y*_width*_depth) + (x*_depth) + z)*_blockAtomCount + 1 + index] = data;
-			}
+			}*/
+			_data[((y*_width*_depth) + (x*_depth) + z)*_blockAtomCount + 1 + index] = data;
 
+		}
+		
+		void setBlock(int x, int y, int z, void* data) {
+			setBlock(x, y, z, (T*)data);
+		}
+		void setBlock(int x, int y, int z, const char* data) {
+			setBlock(x, y, z, (T*)data);
+		}
+		void setBlock(int x, int y, int z, T* data) {
+			for (int i = 0; i < _blockAtomCount; i++) {
+				_data[((y*_width*_depth) + (x*_depth) + z)*_blockAtomCount + i] = data[i];
+			}
 		}
 		void setBlockOrientation(int x, int y, int z, int orientation) {
 			T old = (T)((int)_data[((y*_width) + (x*_depth) + z)*_blockAtomCount + 1] & 252);
@@ -191,9 +221,10 @@ namespace grid {
 		}
 		bool getData_safe(int x, int y, int z, T* buffer) {
 
-			for (int i; i < _blockAtomCount; i++) {
+			for (int i = 0; i < _blockAtomCount; i++) {
 				buffer[i] = _data[((y*_width*_depth) + (x*_depth) + z)*_blockAtomCount + i];
 			}
+			return true;
 		}
 
 		void setAllBlockType(T type) {
@@ -218,24 +249,116 @@ namespace grid {
 			if (binary) {
 				ifstream stream;
 				stream.open(filename, ios::in | ios::binary);
-
+				char* buffer = new char[10];
 
 				if (!stream.is_open())return false;
+				stream.read(buffer, 3);
+				if (buffer[0] != 'g' || buffer[1] != 'c' || buffer[2] != 'f') {
+					std::cout << "filetype mismatch [aborting]" << std::endl;
+					stream.close();
+					return false;
+				}
+				stream.read(buffer, sizeof(int));
+				int version_id = *((int*)buffer);
+				std::cout << "version id: " << version_id << std::endl;
+				stream.read(buffer, sizeof(int));
+				int width = *((int*)buffer);
+				std::cout << "width: " << _width << std::endl;
+				stream.read(buffer, sizeof(int));
+				int height = *((int*)buffer);
+				std::cout << "height: " << _height << std::endl;
+				stream.read(buffer, sizeof(int));
+				int depth = *((int*)buffer);
+				std::cout << "depth: " << _depth << std::endl;
 
+				stream.read(buffer, sizeof(float));
+				_x = *((float*)buffer);
+				std::cout << "x: " << _x << std::endl;
+				stream.read(buffer, sizeof(float));
+				_y = *((float*)buffer);
+				std::cout << "y: " << _y << std::endl;
+				stream.read(buffer, sizeof(float));
+				_z = *((float*)buffer);
+				std::cout << "z: " << _z << std::endl;
+
+				stream.read(buffer, sizeof(int));
+				 int atomSize = *((int*)buffer);
+				std::cout << "atomSize: " << atomSize << std::endl;
+				if (atomSize != sizeof(T)) {
+					std::cout << "[Warning] Byte Structure Mismatch: file type size = "<< atomSize << " , program type size = " << sizeof(T) <<  std::endl;
+				}
+				
+				stream.read(buffer, sizeof(int));
+				_blockAtomCount = *((int*)buffer);
+				std::cout << "blockAtomCount: " << _blockAtomCount << std::endl;
+				stream.read(buffer, sizeof(int));
+				int order = *((int*)buffer);
+				std::cout << "order: " << order << std::endl;
+
+				_order = order;
+
+				if (width != _width || _height != height || depth != _depth) {
+					allocate();
+				}
+				_width = width;
+				_height = height;
+				_depth = depth;
+				
+				stream.read(buffer, 4);
+				if (buffer[0] != '@' || buffer[1] != 'c' || buffer[2] != 'n' || buffer[3] != 'k') {
+					std::cout << "no chunk data found [aborting]" << std::endl;
+					stream.close();
+					return false;
+				}
+
+				delete [] buffer;
+				int blockBytes = _blockAtomCount * atomSize;
+				buffer = new char[blockBytes];
+
+				if (order == X_MAJOR_ORDER) { // X_MAJOR_ORDER
+					for (int x = 0; x < this->_width; x++) {
+						for (int y = 0; y < this->_height; y++) {
+							for (int z = 0; z < this->_depth; z++) {
+								
+								stream.read(buffer, blockBytes);
+								setBlock(x, y, z, (T*)buffer);
+
+							}
+						}
+					}
+				}
+
+				else {
+					
+					for (int y = 0; y < this->_height; y++) {
+						for (int x = 0; x < this->_width; x++) {
+							for (int z = 0; z < this->_depth; z++) {
+								stream.read(buffer, blockBytes);
+								setBlock(x, y, z, (T*)buffer);
+								
+							}
+						}
+					}
+				}
+
+
+				stream.close();
 				return true;
 			}
 			else {
 
 			}
 		}
-		bool save(string filename) {
-			if (_writeBinary) {
+		bool save(string filename, bool binary = false) {
+			if (_writeBinary || binary) {
 				ofstream stream;
 				int atomSize = sizeof(T);
+				int version = 2;
 				stream.open(filename, ios::out | ios::binary);
 				if (!stream.is_open())return false;
 
-				stream << "ggf";
+				stream << "gcf";
+				stream.write((const char*)&version, sizeof(int));
 				stream.write((const char*)&_width, sizeof(int));
 				stream.write((const char*)&_height, sizeof(int));
 				stream.write((const char*)&_depth, sizeof(int));
@@ -247,20 +370,35 @@ namespace grid {
 				stream.write((const char*)&_order, sizeof(int));
 
 				stream << "@cnk";
-				for (int x = 0; x < this->_width; x++) {
-					for (int y = 0; y < this->_height; y++) {
-						for (int z = 0; z < this->_depth; z++) {
-							for (int a = 0; a < this->_blockAtomCount; a++) {
-								T data = (_order == X_MAJOR_ORDER) ? getData(x, y, z, a) : getData(y, x, z, a);
+				if (_order == X_MAJOR_ORDER) {
+					for (int x = 0; x < this->_width; x++) {
+						for (int y = 0; y < this->_height; y++) {
+							for (int z = 0; z < this->_depth; z++) {
+								for (int a = 0; a < this->_blockAtomCount; a++) {
+									T data = getData(x, y, z, a);
+									stream.write((const char*)&data, sizeof(T));
 
-								stream.write((const char*)&data, sizeof(T));
+								}
 
 							}
-
 						}
 					}
-
 				}
+				else {
+					for (int y = 0; y < this->_height; y++) {
+						for (int x = 0; x < this->_width; x++) {
+							for (int z = 0; z < this->_depth; z++) {
+								for (int a = 0; a < this->_blockAtomCount; a++) {
+									T data = getData(x, y, z, a);
+									stream.write((const char*)&data, sizeof(T));
+
+								}
+
+							}
+						}
+					}
+				}
+				
 
 				for (int i = 0; i < _dataEntityList.size(); i++) {
 

@@ -3,6 +3,8 @@
 #include "grid.h"
 #include "blocks.h"
 #include "grid_model.h"
+#include "griddle_ui.h"
+#include <sstream>
 
 namespace Griddle {
 	
@@ -12,15 +14,18 @@ namespace Griddle {
 		glgl::ShaderProgram _standardShader;
 		glgl::Texture _textureGrass;
 		glgl::Texture _textureAtlas;
-		glgl::DataBuffer* _blockDataBuffer[3];
-		glgl::StaticModel* _blockModel;
-		glgl::DynamicModel* _chunkModel;
+		grid::StandardGrid* _grid;
+		Griddle::GriddleUI* _ui;
 		GridModel* _gridModel;
 		float _maxOrthographicZoom;
 		float rotation;
 		bool _frustum;
 		float _orthographicZoom;
 		float _textureScale;
+		int activeLayer;
+
+		TTF_Font* _screenFont;
+		glgl::TextRenderer* _textRenderer;
 
 		void initGL() {
 			glClearColor(0, 0, 0, 1);
@@ -44,17 +49,8 @@ namespace Griddle {
 			
 			glgl::ObjLoader* objLoader = new glgl::ObjLoader();
 
-			objLoader->loadFile("models/block.obj", _blockModel);
-
 			delete objLoader;
-			
 
-			_blockDataBuffer[0]->setData(&_blockModel->_vertices[0], _blockModel->_vertices.size(), 3, GL_FLOAT, glgl::DYNAMIC_DRAW);
-			_blockDataBuffer[1]->setData(&_blockModel->_uvs[0], _blockModel->_uvs.size(), 3, GL_FLOAT, glgl::DYNAMIC_DRAW);
-			_blockDataBuffer[2]->setData(&_blockModel->_normals[0], _blockModel->_normals.size(), 3, GL_FLOAT, glgl::DYNAMIC_DRAW);
-
-			
-			_gridModel->build();
 		}
 		void initShaders() {
 			glgl::Shader* frag = new glgl::Shader(glgl::ShaderManager::FRAGMENT, "shaders/standard/frag_shader.txt");
@@ -94,34 +90,37 @@ namespace Griddle {
 			_textureAtlas.getHandle() = BlockTextures::getInstance()->build();
 		}
 
+		void initHUD() {
+			_screenFont = TTF_OpenFont("fonts/arial.ttf", 16);
+			if (_screenFont == NULL) {
+				std::cout << TTF_GetError() << std::endl;
+			}
+
+			_ui->setCurrentBlockType(Blocks::getInstance()->getBlock(4));
+		}
+
 		void initGrid() {
-			std::cout << Blocks::getInstance()->getBlock(8)._stateList[1]._xOffset << std::endl;
+			
+			_grid->setAllBlockType(0);
+			/*
 			int passes = 70;
 			for (int i = 0; i < _gridModel->_width; i++) {
 				for (int j = 0; j < _gridModel->_height; j++) {
-					_gridModel->updateBlock(i, j, 0, 1);
-					_gridModel->updateBlock(i, j, 1, 0);
+					_grid->setBlockType(i, j, 0, 5);
+					_grid->setBlockType(i, j, 1, 0);
+					_grid->setBlockType(i, j, 2, 0);
 					
+
 				}
 			}
-			for (int h = 0; h < passes; h++) {
-				int islandSize = rand() % 10;
-				int randX = rand() % (_gridModel->_width);
-				int randY = rand() % (_gridModel->_height);
-				for (int i = randX-islandSize / 2; i < randX + islandSize / 2; i++) {
-					for (int j = randY -islandSize / 2; j < randY+islandSize / 2; j++) {
-						if (i < 0 || i >= _gridModel->_width || j < 0 || j >= _gridModel->_height)continue;
-						int blockType = rand() % 8;
-						if (blockType < 3)blockType = 3;
-						
-						_gridModel->updateBlock(i, j, 0, blockType);
-						
+			*/
+			
+			_grid->load("saved_grid.gcf", true);
 
-					}
-				}
-			}
+			
 
-
+			_gridModel->build(_grid);
+			
 			
 			
 		}
@@ -129,14 +128,16 @@ namespace Griddle {
 	public:
 		InitialState(gaf::Application* app) : ApplicationState(app) {
 			this->_eventHandler = this;
+			_textRenderer = new MySDLTextRenderer();
+
+			this->_eventHandler = this;
 			_camera = new glgl::Camera();
 
 			_camera->setPos(glm::vec3(45, 45, 45));
 			_camera->setTarg(glm::vec3(0, 0, 0));
 			_camera->setVert(glm::vec3(0, 1, 0));
 			
-			_blockModel = new glgl::StaticModel();
-			_chunkModel = new glgl::DynamicModel(glgl::StaticModel::VERTICES | glgl::StaticModel::COLORS);
+			
 				
 			_maxOrthographicZoom = 200;
 			rotation = 0;
@@ -144,11 +145,20 @@ namespace Griddle {
 			_orthographicZoom = 60;
 			_textureScale = 64.0f / 1024.0f;
 
+			_grid = new grid::StandardGrid(32, 32, 3);
+			_grid->allocate();
+			
 			_gridModel = new GridModel(32, 32, 3, 0, 0, _textureScale, glgl::StaticModel::VERTICES | glgl::StaticModel::COLORS);
+
+			_ui = new GriddleUI(this);
+			_ui->setCamera(_camera);
+			_ui->setFrustum(&_frustum);
+			_ui->setGrid(_grid);
+			_ui->setGridModel(_gridModel);
+			_ui->setRenderState(&_pipeline);
+
 			BlockTextures::newInstance(64.0f, 1024.0f);
-			_blockDataBuffer[0] = new glgl::ServerDataBuffer();
-			_blockDataBuffer[1] = new glgl::ServerDataBuffer();
-			_blockDataBuffer[2] = new glgl::ServerDataBuffer();
+			
 		}
 		void InitialState::onStart() {
 			initBlocks();
@@ -157,6 +167,9 @@ namespace Griddle {
 			initModels();
 			initShaders();
 			initGrid();
+			initHUD();
+
+			
 		}
 
 		void changePerspective() {
@@ -172,6 +185,22 @@ namespace Griddle {
 		}
 		void InitialState::onClose() {
 			
+		}
+
+		void drawScreenText() {
+			std::ostringstream activeLayerStream;
+			std::ostringstream posStream;
+			GriddleUI::BlockCoords block = _ui->getMouseOverCoords();
+			activeLayerStream << "Active Layer: " << _ui->getActiveLayer();
+			posStream << "[" << block.x << ", " << block.y << ", " << block.z << "]";
+			this->_textRenderer->renderText("Griddle 0.4", _screenFont, 255, 255, 255, 0, 0, -1);
+			this->_textRenderer->renderText(activeLayerStream.str(), _screenFont, 255, 255, 255, 0, (float)_parentApp->getHeight()-18, -1);
+			this->_textRenderer->renderText(posStream.str(), _screenFont, 255, 255, 255, 0, (float)_parentApp->getHeight() - 40, -1);
+		}
+		void drawUI() {
+			_textureAtlas.bind();
+			_ui->drawActiveBlockSprite((float)_parentApp->getWidth() - 70, 10, -1, 60);
+			drawScreenText();
 		}
 		
 		void InitialState::onDraw() {
@@ -252,22 +281,56 @@ namespace Griddle {
 
 			glEnd();
 			*/
+
 			
-				
+			drawHUD();
 			
+		}
+
+		void drawHUD() {
+			/*
+			_pipeline.matrices().matrixMode(glgl::Matrices::PROJECTION_MATRIX);
+			_pipeline.matrices().pushMatrix();
+			_pipeline.matrices().loadIdentity();
+			_pipeline.matrices().ortho(-((int)(float)_parentApp->getWidth() / _orthographicZoom), ((int)(float)_parentApp->getWidth() / _orthographicZoom), -((int)(float)_parentApp->getHeight() / _orthographicZoom), ((int)(float)_parentApp->getHeight() / _orthographicZoom), 0.1, 100);
+
+			_pipeline.matrices().matrixMode(glgl::Matrices::MODEL_MATRIX);
+			_pipeline.matrices().pushMatrix();
+			_pipeline.matrices().loadIdentity();
+			_standardShader.uniform1f("use_texture", 1);
+			_pipeline.matrices().sendToShader(_standardShader);
+			drawScreenText();
+			_pipeline.matrices().popMatrix();
+			_pipeline.matrices().matrixMode(glgl::Matrices::PROJECTION_MATRIX);
+			_pipeline.matrices().popMatrix();
+			*/
+			_pipeline.matrices().pushMatrix(glgl::Matrices::MODEL_VIEW_MATRIX | glgl::Matrices::PROJECTION_MATRIX);
+			_pipeline.matrices().matrixMode(glgl::Matrices::PROJECTION_MATRIX);
+			_pipeline.matrices().loadIdentity();
+			_pipeline.matrices().ortho(0, ((int)(float)_parentApp->getWidth()), 0, ((int)(float)_parentApp->getHeight()), 0.1, 10);
+			_standardShader.uniform1f("use_texture", 1);
+			_pipeline.matrices().matrixMode(glgl::Matrices::VIEW_MATRIX);
+			_pipeline.matrices().loadIdentity();
+			_pipeline.matrices().matrixMode(glgl::Matrices::MODEL_MATRIX);
+			_pipeline.matrices().loadIdentity();
+			_pipeline.matrices().sendToShader(_standardShader);
+			drawUI();
+			_pipeline.matrices().popMatrix(glgl::Matrices::MODEL_VIEW_MATRIX | glgl::Matrices::PROJECTION_MATRIX);
+			
+
 		}
 		void InitialState::onUpdate(double delta) {
 			updateKeys(delta);
 		}
 
-		glm::vec3 findMouseCoords(float mx, float my) {
+		glm::vec3 findMouseCoords(float mx, float my, int row) {
 			
 			if (_frustum) {
 				glm::vec3 cameraPos = _camera->getPos();
 				float x = mx;
 				float y = (float)this->getParent()->getHeight() - my;
 				float z = 1;
-				float depth = 0.85f;
+				float depth = ((float)row) + 0.85f;
 				
 				glm::vec3 rayWorld = glm::unProject(glm::vec3(x, y, z), _pipeline.matrices().getModelViewMatrix(), _pipeline.matrices().getProjectionMatrix(), glm::vec4(0, 0, _parentApp->getWidth(), _parentApp->getHeight()));
 				
@@ -283,7 +346,7 @@ namespace Griddle {
 				float x = mx;
 				float y = (float)this->getParent()->getHeight() - my;
 				float z = 0;
-				float depth = 0.5f;
+				float depth = ((float)row) + 0.5f;
 				
 
 
@@ -390,8 +453,10 @@ namespace Griddle {
 			if (keys[SDL_SCANCODE_0]) {
 				_camera->setTarg(glm::vec3(0, 0, 0));
 				_camera->setPos(glm::vec3(45, 45, 45));
+				_orthographicZoom = 45;
 
 			}
+			
 			
 		}
 		void InitialState::onPause() {
@@ -399,11 +464,21 @@ namespace Griddle {
 		}
 		void InitialState::handleEvent(gaf::ApplicationState* appState, void* e) {
 			SDL_Event* Event = ((SDL_Event*)e);
-			if (Event->type == SDL_QUIT) {
+
+			if (Event->type == SDL_MOUSEMOTION) {
+				_ui->handleMouseMove(Event->motion.x, Event->motion.y);
+			}
+			else if (Event->type == SDL_MOUSEBUTTONDOWN) {
+				_ui->handleMouseDown(Event->button.x, Event->button.y, Event->button.button);
+			}
+			else if (Event->type == SDL_MOUSEBUTTONUP) {
+				_ui->handleMouseUp(Event->button.x, Event->button.y, Event->button.button);
+			}
+			else if (Event->type == SDL_QUIT) {
 				_parentApp->requestClose();
 			}
 			else if (Event->type == SDL_KEYDOWN) {
-
+				_ui->handleKeyDown(Event->key.keysym.scancode);
 			}
 			else if (Event->type == SDL_KEYUP) {
 				if (Event->key.keysym.scancode == SDL_SCANCODE_ESCAPE) {
@@ -412,16 +487,26 @@ namespace Griddle {
 				else if (Event->key.keysym.scancode == SDL_SCANCODE_9) {
 					changePerspective();
 				}
+				else if (Event->key.keysym.scancode == SDL_SCANCODE_1) {
+					_grid->save("saved_grid.gcf", true);
+
+				}
+				else if (Event->key.keysym.scancode == SDL_SCANCODE_2) {
+					_grid->load("saved_grid.gcf", true);
+					_gridModel->build(_grid);
+
+				}
+				else {
+					_ui->handleKeyUp(Event->key.keysym.scancode);
+				}
 
 			}
 			else if (Event->type == SDL_MOUSEMOTION) {
-				glm::vec3 mousePos3D = findMouseCoords(Event->motion.x, Event->motion.y);
-				int blockPos[3];
-				blockPos[0] = int((mousePos3D.x - _gridModel->_x));
-				blockPos[1] = int((mousePos3D.z - _gridModel->_z));
-				blockPos[2] = int((mousePos3D.y - _gridModel->_y));
-				//std::cout << "selecting block: " << blockPos[0] << ", " << blockPos[1] << ", " << blockPos[2] << std::endl;
-				_gridModel->setSelectedBlock(blockPos[0], blockPos[1], blockPos[2]);
+				_ui->handleMouseMove(Event->motion.x, Event->motion.y);
+			}
+			else if (Event->type == SDL_MOUSEWHEEL) {
+				_ui->handleMouseWheel(Event->motion.x, Event->motion.y, Event->wheel.y);
+				
 			}
 		}
 

@@ -1,13 +1,32 @@
-﻿Build started 9/27/2014 4:46:48 PM.
+﻿Build started 10/20/2014 4:13:10 PM.
      1>Project "C:\Users\kameron\documents\visual studio 2013\Projects\GridDesigner\Griddle\Griddle.vcxproj" on node 2 (Build target(s)).
      1>ClCompile:
-         C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\CL.exe /c /I"C:\Visual Studio Libraries\giggle\include" /I"C:\Visual Studio Libraries\glm" /I"C:\Visual Studio Libraries\gaf -1\include" /I"C:\Visual Studio Libraries\SDL2-2.0.1\include" /I"C:\Visual Studio Libraries\glew-1.10.0\include" /ZI /nologo /W3 /WX- /sdl /Od /Oy- /D WIN32 /D _DEBUG /D _WINDOWS /D _UNICODE /D UNICODE /Gm /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Fo"Debug\\" /Fd"Debug\vc120.pdb" /Gd /TP /analyze- /errorReport:prompt grid_model.cpp
-         grid_model.cpp
-     1>c:\users\kameron\documents\visual studio 2013\projects\griddesigner\griddle\grid_model.cpp(82): warning C4244: 'argument' : conversion from 'float' to 'int', possible loss of data
+         C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\CL.exe /c /I"C:\Visual Studio Libraries\giggle\include" /I"C:\Visual Studio Libraries\glm" /I"C:\Visual Studio Libraries\gaf -1\include" /I"C:\Visual Studio Libraries\SDL2-2.0.1\include" /I"C:\Visual Studio Libraries\glew-1.10.0\include" /ZI /nologo /W3 /WX- /sdl /Od /Oy- /D WIN32 /D _DEBUG /D _WINDOWS /D _UNICODE /D UNICODE /Gm /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Fo"Debug\\" /Fd"Debug\vc120.pdb" /Gd /TP /analyze- /errorReport:prompt exec.cpp
+         exec.cpp
+     1>c:\users\kameron\documents\visual studio 2013\projects\griddesigner\griddle\griddle_ui.h(5): warning C4067: unexpected tokens following preprocessor directive - expected a newline
+     1>c:\users\kameron\documents\visual studio 2013\projects\griddesigner\griddle\exec.cpp(217): warning C4305: 'argument' : truncation from 'double' to 'float'
+     1>c:\users\kameron\documents\visual studio 2013\projects\griddesigner\griddle\exec.cpp(310): warning C4305: 'argument' : truncation from 'double' to 'float'
+     1>c:\users\kameron\documents\visual studio 2013\projects\griddesigner\griddle\exec.cpp(310): warning C4244: 'argument' : conversion from 'int' to 'float', possible loss of data
+     1>c:\users\kameron\documents\visual studio 2013\projects\griddesigner\griddle\exec.cpp(469): warning C4244: 'argument' : conversion from 'Sint32' to 'float', possible loss of data
+     1>c:\users\kameron\documents\visual studio 2013\projects\griddesigner\griddle\exec.cpp(472): warning C4244: 'argument' : conversion from 'Sint32' to 'float', possible loss of data
+     1>c:\users\kameron\documents\visual studio 2013\projects\griddesigner\griddle\exec.cpp(475): warning C4244: 'argument' : conversion from 'Sint32' to 'float', possible loss of data
+     1>c:\users\kameron\documents\visual studio 2013\projects\griddesigner\griddle\exec.cpp(505): warning C4244: 'argument' : conversion from 'Sint32' to 'float', possible loss of data
+     1>c:\users\kameron\documents\visual studio 2013\projects\griddesigner\griddle\exec.cpp(508): warning C4244: 'argument' : conversion from 'Sint32' to 'float', possible loss of data
+     1>c:\users\kameron\documents\visual studio 2013\projects\griddesigner\griddle\grid.h(403): warning C4018: '<' : signed/unsigned mismatch
+                 c:\users\kameron\documents\visual studio 2013\projects\griddesigner\griddle\grid.h(352) : while compiling class template member function 'bool grid::Grid<unsigned short>::save(std::string,bool)'
+                 c:\users\kameron\documents\visual studio 2013\projects\griddesigner\griddle\exec.cpp(491) : see reference to function template instantiation 'bool grid::Grid<unsigned short>::save(std::string,bool)' being compiled
+                 c:\users\kameron\documents\visual studio 2013\projects\griddesigner\griddle\exec.cpp(104) : see reference to class template instantiation 'grid::Grid<unsigned short>' being compiled
+     1>c:\users\kameron\documents\visual studio 2013\projects\griddesigner\griddle\grid.h(439): warning C4244: 'initializing' : conversion from 'double' to 'int', possible loss of data
+     1>c:\users\kameron\documents\visual studio 2013\projects\griddesigner\griddle\grid.h(162): warning C4018: '<' : signed/unsigned mismatch
+                 c:\users\kameron\documents\visual studio 2013\projects\griddesigner\griddle\grid.h(160) : while compiling class template member function 'void grid::Grid<unsigned short>::deallocate(void)'
+                 c:\users\kameron\documents\visual studio 2013\projects\griddesigner\griddle\grid.h(156) : see reference to function template instantiation 'void grid::Grid<unsigned short>::deallocate(void)' being compiled
+     1>c:\users\kameron\documents\visual studio 2013\projects\griddesigner\griddle\grid.h(351): warning C4715: 'grid::Grid<unsigned short>::load' : not all control paths return a value
        Link:
          C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\link.exe /ERRORREPORT:PROMPT /OUT:"C:\Users\kameron\documents\visual studio 2013\Projects\GridDesigner\Debug\Griddle.exe" /INCREMENTAL /NOLOGO /LIBPATH:"C:\Visual Studio Libraries\giggle\lib\debug" /LIBPATH:"C:\Visual Studio Libraries\gaf -1\lib\Debug\x86" /LIBPATH:"C:\Visual Studio Libraries\glew-1.10.0\lib\Release\Win32" /LIBPATH:"C:\Visual Studio Libraries\SDL2-2.0.1\lib\x86" SDL2.lib SDL2main.lib opengl32.lib glu32.lib glew32.lib giggle32.lib SDL2_ttf.lib SDL2_image.lib gaf32.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /DEBUG /PDB:"C:\Users\kameron\documents\visual studio 2013\Projects\GridDesigner\Debug\Griddle.pdb" /SUBSYSTEM:CONSOLE /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"C:\Users\kameron\documents\visual studio 2013\Projects\GridDesigner\Debug\Griddle.lib" /MACHINE:X86 Debug\App.obj
          Debug\blocks.obj
          Debug\exec.obj
+         Debug\FileDefLoader.obj
+         Debug\griddle_ui.obj
          Debug\grid_model.obj
          Debug\Utility.obj
          Griddle.vcxproj -> C:\Users\kameron\documents\visual studio 2013\Projects\GridDesigner\Debug\Griddle.exe
@@ -15,4 +34,4 @@
 
 Build succeeded.
 
-Time Elapsed 00:00:02.51
+Time Elapsed 00:00:03.53

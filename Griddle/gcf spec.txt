@@ -1,0 +1,27 @@
+/*binary gcf spec*/
+["gcf"] 				- 3 bytes
+[version] 				- 4 bytes
+[width][height][depth] 			- 12 bytes
+[x][y][z] 				- 12 bytes
+[atom_size] 				- 4 bytes
+[blockAtomCount] 			- 4 bytes
+[order] 				- 4 bytes 	NOTE:(1 for x major, 0 for y major)
+
+["@cnk"] 				- 4 bytes
+[chunk blocks] 				- (width * height * depth * blockAtomCount) bytes
+
+foreach data{
+	["@dat"]			- 4 bytes
+	[id]				- 4 bytes
+	[type]				- 4 bytes	enum["coll", "pair"]
+	[datatype]			- 4 bytes	(INT = 4, SHORT = 2, CHAR = 1)
+	[count]				- 4 bytes	NOTE:count of the values
+	[data]				- (type * values) bytes
+}
+
+
+
+
+
+
+

@@ -9,6 +9,10 @@ namespace Griddle {
 		_yMajorOrder = false;
 		initBaseBlockModel();
 
+		_hideInActiveLayers = false;
+		_ghostInActiveLayers = true;
+		_activeLayer = 0;
+
 	}
 	GridModel::GridModel(int width, int height, int depth, float x, float y, float ts, int state ) {
 		_width = width;
@@ -21,6 +25,53 @@ namespace Griddle {
 		initBaseBlockModel();
 		_state = state;
 
+		_hideInActiveLayers = false;
+		_ghostInActiveLayers = true;
+		_activeLayer = 0;
+
+	}
+	GridModel::GridModel(grid::StandardGrid* object, float ts, int state) {
+		_width = object->getWidth();
+		_height = object->getHeight();
+		_depth = object->getDepth();
+		_textureScale = ts;
+		_yMajorOrder = false;
+		initBaseBlockModel();
+		_state = state;
+		build(object);
+
+		_hideInActiveLayers = false;
+		_ghostInActiveLayers = true;
+		_activeLayer = 0;
+
+	}
+	GridModel::GridModel(grid::IntGrid* object, float ts, int state) {
+		_width = object->getWidth();
+		_height = object->getHeight();
+		_depth = object->getDepth();
+		_textureScale = ts;
+		_yMajorOrder = false;
+		initBaseBlockModel();
+		_state = state;
+		build(object);
+
+		_hideInActiveLayers = false;
+		_ghostInActiveLayers = true;
+		_activeLayer = 0;
+	}
+	GridModel::GridModel(grid::ByteGrid* object, float ts, int state) {
+		_width = object->getWidth();
+		_height = object->getHeight();
+		_depth = object->getDepth();
+		_textureScale = ts;
+		_yMajorOrder = false;
+		initBaseBlockModel();
+		_state = state;
+		build(object);
+
+		_hideInActiveLayers = false;
+		_ghostInActiveLayers = true;
+		_activeLayer = 0;
 	}
 	void GridModel::initBaseBlockModel() {
 		v[0] = glm::vec3(0, 0, 1);
@@ -84,6 +135,57 @@ namespace Griddle {
 			}
 		}
 	}
+	void GridModel::build(grid::StandardGrid* object) {
+		if (object) {
+			this->clear();
+			unsigned short* buffer = new unsigned short[object->getBlockAtomCount()];
+			for (int y = 0; y < _height; y++) {
+				for (int x = 0; x < _width; x++) {
+					for (int z = 0; z < _depth; z++) {
+						object->getData_safe(x, y, z, buffer);
+						float xOff = Blocks::getInstance()->getBlock(buffer[0])._stateList[(int)buffer[1]]._xOffset;
+						float yOff = Blocks::getInstance()->getBlock(buffer[0])._stateList[(int)buffer[1]]._yOffset;
+						addBlockToModel((float)x, (float)y, (float)z, xOff, yOff);
+					}
+				}
+			}
+			delete[] buffer;
+		}
+	}
+	void GridModel::build(grid::IntGrid* object) {
+		if (object) {
+			this->clear();
+			unsigned int* buffer = new unsigned int[object->getBlockAtomCount()];
+			for (int y = 0; y < _height; y++) {
+				for (int x = 0; x < _width; x++) {
+					for (int z = 0; z < _depth; z++) {
+						object->getData_safe(x, y, z, buffer);
+						float xOff = Blocks::getInstance()->getBlock(buffer[0])._stateList[(int)buffer[1]]._xOffset;
+						float yOff = Blocks::getInstance()->getBlock(buffer[0])._stateList[(int)buffer[1]]._yOffset;
+						addBlockToModel((float)x, (float)y, (float)z, xOff, yOff);
+					}
+				}
+			}
+			delete[] buffer;
+		}
+	}
+	void GridModel::build(grid::ByteGrid* object) {
+		if (object) {
+			this->clear();
+			unsigned char* buffer = new unsigned char[object->getBlockAtomCount()];
+			for (int y = 0; y < _height; y++) {
+				for (int x = 0; x < _width; x++) {
+					for (int z = 0; z < _depth; z++) {
+						object->getData_safe(x, y, z, buffer);
+						float xOff = Blocks::getInstance()->getBlock(buffer[0])._stateList[(int)buffer[1]]._xOffset;
+						float yOff = Blocks::getInstance()->getBlock(buffer[0])._stateList[(int)buffer[1]]._yOffset;
+						addBlockToModel((float)x, (float)y, (float)z, xOff, yOff);
+					}
+				}
+			}
+			delete[] buffer;
+		}
+	}
 	void GridModel::setBlockTexture(int x, int y, int z, float xOffset, float yOffset) {
 		glm::vec2 texOffset = glm::vec2(xOffset, yOffset) *_textureScale;
 		int a = (_yMajorOrder) ? y : x;
@@ -119,7 +221,7 @@ namespace Griddle {
 		setBlockColor(x, y, z, block._stateList[data]._r, block._stateList[data]._g, block._stateList[data]._b, block._stateList[data]._a);
 
 	}
-	void GridModel::setSelectedBlock(int x, int y, int z) {
+	void GridModel::setMouseOverBlock(int x, int y, int z) {
 		if (x != _selectedBlock[0] || y != _selectedBlock[1] || z != _selectedBlock[2]) {
 			if (_selectedBlock[0] < 0 || _selectedBlock[1] < 0 || _selectedBlock[2] < 0) {
 				
@@ -168,5 +270,41 @@ namespace Griddle {
 		glDisableClientState(GL_TEXTURE_COORD_ARRAY);
 		glDisableClientState(GL_COLOR_ARRAY);
 		state->matrices().popMatrix();
+	}
+
+	void GridModel::setLayerAlpha(int layer, float alpha) {
+
+		for (int x = 0; x < _width; x++) {
+			for (int y = 0; y < _height; y++) {
+				int z = layer;
+				int start = ((y*_width*_depth) + (x*_depth) + z) * 36;
+				for (int i = 0; i < 36; i++) {
+					_colors[start + i].a = alpha;
+				}
+			}
+		}
+	}
+	void GridModel::setActiveLayer(int layer) {
+		_activeLayer = layer;
+		for (int i = 0; i < _depth; i++) {
+			if (i == layer) {
+				setLayerAlpha(i, 1);
+			}
+			else {
+				if (_hideInActiveLayers) {
+					if (_colors[i * 36].a != 0) {
+						setLayerAlpha(i, 0);
+					}	
+				}
+				else if (_ghostInActiveLayers) {
+					if (_colors[i * 36].a != 0.25) {
+						setLayerAlpha(i, 0.25);
+					}
+				}
+				else {
+					setLayerAlpha(i, 1);
+				}
+			}
+		}
 	}
 }
