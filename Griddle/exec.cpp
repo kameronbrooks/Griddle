@@ -4,11 +4,13 @@
 #include "blocks.h"
 #include "grid_model.h"
 #include "griddle_ui.h"
+#include "FileDefLoader.h"
 #include <sstream>
 
 namespace Griddle {
 	
 	class InitialState : public gaf::ApplicationState, public gaf::iEventHandler {
+		
 		glgl::RenderState _pipeline;
 		glgl::Camera* _camera;
 		glgl::ShaderProgram _standardShader;
@@ -65,28 +67,9 @@ namespace Griddle {
 			delete frag; delete vert;
 		}
 		void initBlocks() {
-			int id = 0;
-			Blocks::getInstance()->registerBlockType(id++, "air", 0, 0);
-			BlockTextures::getInstance()->loadTexture(Blocks::getInstance()->registerBlockType(id++, "water", 1, 0, 1, 1, 1, 0.5), "textures/water.png");
-			BlockTextures::getInstance()->loadTexture(Blocks::getInstance()->registerBlockType(id++, "rock block", 2, 0), "textures/rock block.png");
-			BlockTextures::getInstance()->loadTexture(Blocks::getInstance()->registerBlockType(id++, "rock grassy block", 2, 0), "textures/rock grassy block.png");
-			BlockTextures::getInstance()->loadTexture(Blocks::getInstance()->registerBlockType(id++, "dirt", 0, 1), "textures/dirt.png");
-			BlockTextures::getInstance()->loadTexture(Blocks::getInstance()->registerBlockType(id++, "grass", 1, 1), "textures/grass.png");
-
+			FileDefLoader loader;
+			loader.parseFile("config/block_defs.txt");
 			
-			BlockTextures::getInstance()->loadTexture(Blocks::getInstance()->registerBlockType(id++, "grass patchy", 2, 1), "textures/grass patchy.png");
-			BlockTextures::getInstance()->loadTexture(Blocks::getInstance()->registerBlockType(id++, "grass patchy 1", 3, 1), "textures/grass patchy1.png");
-
-			Blocks::Block stoneBrick;
-			stoneBrick._id = id++;
-			stoneBrick._name = "stone brick";
-			stoneBrick.addState(0, 4, 1).addState(1, 5, 1).addState(2, 6, 1);
-			Blocks::getInstance()->registerBlockType(stoneBrick);
-			BlockTextures::getInstance()->loadTexture(stoneBrick, 0, "textures/stone brick block.png");
-			BlockTextures::getInstance()->loadTexture(stoneBrick, 1, "textures/stone brick block_d0.png");
-			BlockTextures::getInstance()->loadTexture(stoneBrick, 2, "textures/stone brick block_d1.png");
-
-
 			_textureAtlas.getHandle() = BlockTextures::getInstance()->build();
 		}
 
@@ -115,13 +98,8 @@ namespace Griddle {
 			}
 			*/
 			
-			_grid->load("saved_grid.gcf", true);
-
-			
-
+			_grid->load("saves/saved_grid.gcf", true);
 			_gridModel->build(_grid);
-			
-			
 			
 		}
 
@@ -196,6 +174,12 @@ namespace Griddle {
 			this->_textRenderer->renderText("Griddle 0.4", _screenFont, 255, 255, 255, 0, 0, -1);
 			this->_textRenderer->renderText(activeLayerStream.str(), _screenFont, 255, 255, 255, 0, (float)_parentApp->getHeight()-18, -1);
 			this->_textRenderer->renderText(posStream.str(), _screenFont, 255, 255, 255, 0, (float)_parentApp->getHeight() - 40, -1);
+
+			if (this->_ui->consoleActive()) {
+				std::ostringstream consoleStream;
+				consoleStream << ">> " << this->_ui->getConsoleLine();
+				this->_textRenderer->renderText(consoleStream.str(), _screenFont, 255, 255, 0, 0, 20, -1);
+			}
 		}
 		void drawUI() {
 			_textureAtlas.bind();
@@ -227,6 +211,7 @@ namespace Griddle {
 			
 			
 			_standardShader.use();
+			//_standardShader.uniform3f("lightPos", this->_ui->getMouseOverCoords().x, this->_ui->getMouseOverCoords().z, this->_ui->getMouseOverCoords().y);
 			_standardShader.uniform1f("use_texture", 1);
 			_pipeline.matrices().sendToShader(_standardShader);
 			_textureAtlas.bind();
@@ -235,16 +220,11 @@ namespace Griddle {
 			_gridModel->draw(&_pipeline);
 			
 			_standardShader.uniform1f("use_texture", 0);
-			glPointSize(5);
-			glBegin(GL_POINTS);
-			glColor4f(1, 1, 1, 1);
-			glTexCoord2f(0,0); glVertex3f(0, 0, 0);
-			glTexCoord2f(0.5, 1); glVertex3f(4, 0, 0);
-			glTexCoord2f(1, 0); glVertex3f(2, 4, 0);
-
+			//glDisable(GL_DEPTH_TEST);
+			glLineWidth(2);
+			_gridModel->drawWireFrames(&_pipeline);
 			
-			glVertex3f(_camera->getPos().x, _camera->getPos().y, _camera->getPos().z);
-			glEnd();
+			
 			
 			
 			//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -364,6 +344,7 @@ namespace Griddle {
 
 		
 		void updateKeys(double delta) {
+			if (this->_ui->consoleActive())return;
 			const Uint8* keys = SDL_GetKeyboardState(NULL);
 
 			if (keys[SDL_SCANCODE_W] || keys[SDL_SCANCODE_UP]) {
@@ -463,6 +444,7 @@ namespace Griddle {
 
 		}
 		void InitialState::handleEvent(gaf::ApplicationState* appState, void* e) {
+
 			SDL_Event* Event = ((SDL_Event*)e);
 
 			if (Event->type == SDL_MOUSEMOTION) {
@@ -478,9 +460,14 @@ namespace Griddle {
 				_parentApp->requestClose();
 			}
 			else if (Event->type == SDL_KEYDOWN) {
-				_ui->handleKeyDown(Event->key.keysym.scancode);
+				_ui->handleKeyDown(Event->key.keysym.sym);
 			}
 			else if (Event->type == SDL_KEYUP) {
+				if (this->_ui->consoleActive()) {
+					_ui->handleKeyUp(Event->key.keysym.sym);
+					
+					return;
+				}
 				if (Event->key.keysym.scancode == SDL_SCANCODE_ESCAPE) {
 					_parentApp->requestClose();
 				}
@@ -509,8 +496,11 @@ namespace Griddle {
 				
 			}
 		}
+		friend class GriddleUI;
 
 	};
+
+	
 	
 }
 

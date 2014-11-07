@@ -1,5 +1,6 @@
 /*binary gcf spec*/
 ["gcf"] 				- 3 bytes
+[endianess check]			- 4 bytes
 [version] 				- 4 bytes
 [width][height][depth] 			- 12 bytes
 [x][y][z] 				- 12 bytes

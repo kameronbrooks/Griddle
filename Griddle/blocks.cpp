@@ -16,6 +16,8 @@ namespace Griddle {
 		state._b = b;
 		state._a = a;
 		state._hardness = hardness;
+		state._imagePath = "";
+		state._drawType = 0;
 		_stateList[data] = state;
 		return (*this);
 	}
@@ -31,6 +33,8 @@ namespace Griddle {
 		block._stateList[0]._g = g;
 		block._stateList[0]._b = b;
 		block._stateList[0]._a = a;
+		block._stateList[0]._drawType;
+		
 		_registeredBlockList[id] = block;
 		return block;
 	}

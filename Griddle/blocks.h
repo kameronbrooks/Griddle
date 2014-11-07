@@ -18,6 +18,8 @@ namespace Griddle {
 				float _yOffset;
 				float _r, _g, _b, _a;
 				float _hardness;
+				std::string _imagePath;
+				int _drawType;
 			};
 			std::map<int, State> _stateList;
 			Block& addState(int data, float xOffset, float yOffset, float r = 1 , float g = 1, float b = 1, float a = 1, float hardness = 1);

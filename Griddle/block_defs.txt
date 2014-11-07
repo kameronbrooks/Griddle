@@ -1,4 +1,4 @@
 -block air 
-	-state 0 rgb 1 1 1 image null
+-state 0 rgb 1 1 1 image null
 -block water
-	-state 0 rgb 1 1 1 image 
+-state 0 rgb 1 1 1 image 

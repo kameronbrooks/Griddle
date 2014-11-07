@@ -1,5 +1,6 @@
 #ifndef GRIDDLE_GUI
 #define GRIDDLE_GUI
+
 #include "includes.h"
 #include "blocks.h"
 #include <vector>"
@@ -7,6 +8,7 @@
 #include "grid_model.h"
 #include "giggle\gui\giggle_gui.h"
 #include "giggle\gui\giggle_window.h"
+#include <sstream>
 
 namespace Griddle {
 	class GriddleUI {
@@ -20,14 +22,41 @@ namespace Griddle {
 
 			bool operator==(BlockCoords b);
 		};
+		class State {
+		protected:
+			GriddleUI* _parent;
+			std::vector<BlockCoords>* _selectedBlockCoordsList;
+			BlockCoords* _mouseOverCoords;
+			Blocks::Block* _currentBlockType;
+			grid::StandardGrid* _grid;
+			GridModel* _gridModel;
+			bool* _isLMouseDown,* _isRMouseDown;
+			bool* _consoleActive;
+			std::string* _consoleLine;
+			State(GriddleUI* parent);
+		public:
+			virtual void begin() = 0;
+			virtual void handleRightMouseDown(float x, float y) = 0;
+			virtual void handleRightMouseUp(float x, float y) = 0;
+			virtual void handleLeftMouseDown(float x, float y) = 0;
+			virtual void handleLeftMouseUp(float x, float y) = 0;
+			virtual void handleMouseMove(float x, float y) = 0;
+			virtual void handleMouseWheel(float x, float y, int dir) = 0;
+			virtual void handleKeyUp(int keycode) = 0;
+			virtual void handleKeyDown(int keycode) = 0;
+		};
+		State* _activeState;
 		glgl::GUI* _gui;
 		GriddleUI(gaf::ApplicationState* appState);
-
+		void setState(State* state);
 		void setGrid(grid::StandardGrid* grid);
 		void setGridModel(GridModel* model);
 		void setRenderState(glgl::RenderState* state);
 		void setFrustum(bool* frustum);
 		void setCamera(glgl::Camera* camera);
+
+		grid::StandardGrid* getGrid();
+		GridModel* getGridModel();
 		
 
 		Blocks::Block getCurrentBlockType();
@@ -56,6 +85,12 @@ namespace Griddle {
 		void drawActiveBlockSprite(float x, float y, float z, float size);
 
 		void setBlockType(int x, int y, int z, int type = -1);
+		void setBlockData(int x, int y, int z, int data);
+
+		void consoleCommand(std::string line);
+		void draw();
+		std::string getConsoleLine();
+		bool consoleActive();
 	private:
 		std::vector<BlockCoords> _selectedBlockCoordsList;
 		BlockCoords _mouseOverCoords;
@@ -70,6 +105,13 @@ namespace Griddle {
 		int _currentBlockID;
 		float _mouseScreenCoords[2];
 		bool _isLMouseDown, _isRMouseDown;
+		std::string _consoleLine;
+		bool _consoleActive;
+
+		State* _dataState;
+		State* _saveState;
+		State* _loadState;
+		State* _helpState;
 
 		
 	};

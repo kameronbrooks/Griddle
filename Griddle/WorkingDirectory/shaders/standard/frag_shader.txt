@@ -8,9 +8,13 @@ smooth in vec4 color;
 
 
 void main() {
+	
 	if(use_texture > 0) {
-		gl_FragColor = color * texture2D(tex, textureCoord.st);
+		vec4 finCol = color * texture2D(tex, textureCoord.st);
+		if(finCol.a < 0.1)discard;
+		gl_FragColor = finCol;
 	} else {
+		if(color.a < 0.1)discard;
 		gl_FragColor = color;
 	}
 	
